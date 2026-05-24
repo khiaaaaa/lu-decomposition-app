@@ -1,1 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LU Decomposition — Doolittle Method · Numerical Methods</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+
+<!-- =========================================================
+     HEADER
+========================================================== -->
+<header class="masthead">
+  <div class="masthead__inner">
+    <div class="masthead__brand">
+      <span class="brand__numeral">№ 08</span>
+      <span class="brand__series">Numerical Methods · PIT Finals 2026</span>
+    </div>
+    <nav class="masthead__nav">
+      <a href="#theory">Theory</a>
+      <a href="#example-1">Example 1</a>
+      <a href="#example-2">Example 2</a>
+      <a href="#calculator">Calculator</a>
+    </nav>
+  </div>
+</header>
+
+<!-- =========================================================
+     HERO
+========================================================== -->
+<section class="hero">
+  <div class="hero__grid">
+    <div class="hero__left">
+      <p class="hero__eyebrow">Linear Algebra · Direct Methods</p>
+      <h1 class="hero__title">
+        LU<br>
+        <em>Decomposition</em>
+      </h1>
+      <p class="hero__subtitle">
+        The Doolittle method — factoring a matrix into the product of a
+        lower-triangular and an upper-triangular matrix, then solving
+        any linear system by two simple substitutions.
+      </p>
+      <div class="hero__cta">
+        <a href="#calculator" class="btn btn--primary">Open Calculator →</a>
+        <a href="#theory" class="btn btn--ghost">Read the theory</a>
+      </div>
+    </div>
+
+    <div class="hero__right">
+      <div class="hero__formula">
+        $$A \;=\; L\,U$$
+        <div class="hero__formula-caption">where $L$ has 1's on the diagonal</div>
+      </div>
+      <div class="hero__matrices">
+        $$
+        \underbrace{\begin{bmatrix}
+          a_{11} & a_{12} & a_{13}\\
+          a_{21} & a_{22} & a_{23}\\
+          a_{31} & a_{32} & a_{33}
+        \end{bmatrix}}_{A}
+        =
+        \underbrace{\begin{bmatrix}
+          1 & 0 & 0\\
+          \ell_{21} & 1 & 0\\
+          \ell_{31} & \ell_{32} & 1
+        \end{bmatrix}}_{L}
+        \underbrace{\begin{bmatrix}
+          u_{11} & u_{12} & u_{13}\\
+          0      & u_{22} & u_{23}\\
+          0      & 0      & u_{33}
+        \end{bmatrix}}_{U}
+        $$
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     THEORY
+========================================================== -->
+<section id="theory" class="section">
+  <div class="section__head">
+    <span class="section__kicker">I.</span>
+    <h2 class="section__title">Mathematical Background</h2>
+  </div>
+
+  <div class="prose">
+    <p class="prose__lead">
+      Given a square system $A\mathbf{x} = \mathbf{b}$, the LU
+      decomposition factors $A$ into a lower-triangular matrix $L$ and an
+      upper-triangular matrix $U$ such that $A = LU$. Once this factorization
+      is available, the system can be solved by two triangular substitutions
+      — much cheaper than re-doing Gaussian elimination for each new
+      right-hand side.
+    </p>
+
+    <h3>The Doolittle convention</h3>
+    <p>
+      LU factorization is not unique. The <em>Doolittle</em> variant fixes
+      the diagonal of $L$ to be $1$. For an $n \times n$ matrix this gives
+      exactly $n^2$ unknowns ($n(n-1)/2$ in $L$ below the diagonal and
+      $n(n+1)/2$ in $U$ on and above), matching the $n^2$ entries of $A$.
+    </p>
+
+    <h3>Construction formulas</h3>
+    <p>
+      Expanding $A = LU$ entry by entry and exploiting the triangular
+      structure gives, for $k = 1, 2, \ldots, n$:
+    </p>
+
+    <div class="formula-block">
+      $$ u_{kj} \;=\; a_{kj} \;-\; \sum_{p=1}^{k-1} \ell_{kp}\, u_{pj},
+         \qquad j = k, k+1, \ldots, n $$
+      $$ \ell_{ik} \;=\; \frac{1}{u_{kk}}\!\left(a_{ik} \;-\; \sum_{p=1}^{k-1} \ell_{ip}\, u_{pk}\right),
+         \qquad i = k+1, \ldots, n $$
+    </div>
+
+    <p>
+      Each step uses only entries computed in earlier steps, so the
+      decomposition proceeds row-by-row from the top.
+    </p>
+
+    <h3>Solving $A\mathbf{x} = \mathbf{b}$ with $LU$</h3>
+    <p>
+      Once $A = LU$, the system $LU\mathbf{x} = \mathbf{b}$ is split:
+    </p>
+
+    <div class="two-col">
+      <div class="step-card">
+        <h4>Forward substitution</h4>
+        <p>Solve $L\mathbf{y} = \mathbf{b}$ from top to bottom:</p>
+        $$ y_i \;=\; b_i \;-\; \sum_{j=1}^{i-1} \ell_{ij}\, y_j $$
+        <p class="hint">(no division — $L$ has 1's on the diagonal.)</p>
+      </div>
+      <div class="step-card">
+        <h4>Backward substitution</h4>
+        <p>Solve $U\mathbf{x} = \mathbf{y}$ from bottom to top:</p>
+        $$ x_i \;=\; \frac{1}{u_{ii}}\!\left(y_i \;-\; \sum_{j=i+1}^{n} u_{ij}\, x_j\right) $$
+      </div>
+    </div>
+
+    <h3>Existence and partial pivoting</h3>
+    <p>
+      A Doolittle factorization exists when every leading principal minor of
+      $A$ is non-zero. If a zero pivot $u_{kk}=0$ is encountered, the
+      decomposition fails. The classic remedy is <em>partial pivoting</em>,
+      which produces a permuted factorization $PA = LU$, where $P$ is a
+      permutation matrix that records row swaps. The calculator below
+      supports both variants.
+    </p>
+
+    <h3>Computational cost</h3>
+    <p>
+      The decomposition itself costs $\mathcal{O}(2n^3/3)$ floating-point
+      operations — the same as Gaussian elimination. Each subsequent
+      back/forward substitution costs only $\mathcal{O}(n^2)$, which is the
+      whole point: factor once, solve many times.
+    </p>
+  </div>
+</section>
+
+<!-- =========================================================
+     EXAMPLE 1
+========================================================== -->
+<section id="example-1" class="section section--alt">
+  <div class="section__head">
+    <span class="section__kicker">II.</span>
+    <h2 class="section__title">Worked Example 1 — a 3×3 system</h2>
+  </div>
+
+  <div class="example">
+    <div class="example__statement">
+      <h3>Problem.</h3>
+      <p>Solve the system $A\mathbf{x} = \mathbf{b}$ where</p>
+      $$
+      A = \begin{bmatrix} 2 & -1 & -2\\ -4 & 6 & 3\\ -4 & -2 & 8 \end{bmatrix},
+      \qquad
+      \mathbf{b} = \begin{bmatrix} -1 \\ 9 \\ -2 \end{bmatrix}.
+      $$
+      <p>Using the Doolittle LU decomposition method (no pivoting needed).</p>
+    </div>
+
+    <div class="example__step">
+      <h4>Step 1 · Compute row 1 of $U$ ($k=1$)</h4>
+      <p>With no terms in the summation:</p>
+      $$ u_{11} = a_{11} = 2 \qquad u_{12} = a_{12} = -1 \qquad u_{13} = a_{13} = -2 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 2 · Compute column 1 of $L$ ($k=1$)</h4>
+      $$ \ell_{21} = \frac{a_{21}}{u_{11}} = \frac{-4}{2} = -2 $$
+      $$ \ell_{31} = \frac{a_{31}}{u_{11}} = \frac{-4}{2} = -2 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 3 · Compute row 2 of $U$ ($k=2$)</h4>
+      $$ u_{22} = a_{22} - \ell_{21}u_{12} = 6 - (-2)(-1) = 6 - 2 = 4 $$
+      $$ u_{23} = a_{23} - \ell_{21}u_{13} = 3 - (-2)(-2) = 3 - 4 = -1 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 4 · Compute column 2 of $L$ ($k=2$)</h4>
+      $$ \ell_{32} = \frac{a_{32} - \ell_{31}u_{12}}{u_{22}}
+                 = \frac{-2 - (-2)(-1)}{4} = \frac{-2-2}{4} = -1 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 5 · Compute row 3 of $U$ ($k=3$)</h4>
+      $$ u_{33} = a_{33} - \ell_{31}u_{13} - \ell_{32}u_{23}
+                = 8 - (-2)(-2) - (-1)(-1) = 8 - 4 - 1 = 3 $$
+    </div>
+
+    <div class="example__step example__step--result">
+      <h4>Final factorization</h4>
+      $$
+      L = \begin{bmatrix} 1 & 0 & 0\\ -2 & 1 & 0\\ -2 & -1 & 1 \end{bmatrix},
+      \qquad
+      U = \begin{bmatrix} 2 & -1 & -2\\ 0 & 4 & -1\\ 0 & 0 & 3 \end{bmatrix}
+      $$
+      <p>Verification: $LU = A$.</p>
+    </div>
+
+    <div class="example__step">
+      <h4>Step 6 · Forward substitution: $L\mathbf{y} = \mathbf{b}$</h4>
+      $$ y_1 = b_1 = -1 $$
+      $$ y_2 = b_2 - \ell_{21}y_1 = 9 - (-2)(-1) = 9 - 2 = 7 $$
+      $$ y_3 = b_3 - \ell_{31}y_1 - \ell_{32}y_2 = -2 - (-2)(-1) - (-1)(7) = -2 - 2 + 7 = 3 $$
+      $$ \mathbf{y} = (-1,\; 7,\; 3)^{\!\top} $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 7 · Backward substitution: $U\mathbf{x} = \mathbf{y}$</h4>
+      $$ x_3 = \frac{y_3}{u_{33}} = \frac{3}{3} = 1 $$
+      $$ x_2 = \frac{y_2 - u_{23}x_3}{u_{22}} = \frac{7 - (-1)(1)}{4} = \frac{8}{4} = 2 $$
+      $$ x_1 = \frac{y_1 - u_{12}x_2 - u_{13}x_3}{u_{11}}
+            = \frac{-1 - (-1)(2) - (-2)(1)}{2} = \frac{-1 + 2 + 2}{2} = \frac{3}{2} $$
+    </div>
+
+    <div class="example__step example__step--result">
+      <h4>Solution</h4>
+      $$ \mathbf{x} = \begin{bmatrix} 3/2 \\ 2 \\ 1 \end{bmatrix} $$
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     EXAMPLE 2
+========================================================== -->
+<section id="example-2" class="section">
+  <div class="section__head">
+    <span class="section__kicker">III.</span>
+    <h2 class="section__title">Worked Example 2 — a 4×4 system</h2>
+  </div>
+
+  <div class="example">
+    <div class="example__statement">
+      <h3>Problem.</h3>
+      <p>Solve $A\mathbf{x} = \mathbf{b}$ for</p>
+      $$
+      A = \begin{bmatrix}
+        1 & 1 & 0 & 3 \\
+        2 & 1 & -1 & 1 \\
+        3 & -1 & -1 & 2 \\
+        -1 & 2 & 3 & -1
+      \end{bmatrix},
+      \qquad
+      \mathbf{b} = \begin{bmatrix} 4 \\ 1 \\ -3 \\ 4 \end{bmatrix}.
+      $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 1 · Row 1 of $U$, then column 1 of $L$ ($k=1$)</h4>
+      $$ u_{11}=1,\; u_{12}=1,\; u_{13}=0,\; u_{14}=3 $$
+      $$ \ell_{21}=\tfrac{2}{1}=2,\quad
+         \ell_{31}=\tfrac{3}{1}=3,\quad
+         \ell_{41}=\tfrac{-1}{1}=-1 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 2 · Row 2 of $U$ ($k=2$)</h4>
+      $$ u_{22} = 1 - (2)(1) = -1 $$
+      $$ u_{23} = -1 - (2)(0) = -1 $$
+      $$ u_{24} = 1 - (2)(3) = -5 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 3 · Column 2 of $L$ ($k=2$)</h4>
+      $$ \ell_{32} = \frac{-1 - (3)(1)}{-1} = \frac{-4}{-1} = 4 $$
+      $$ \ell_{42} = \frac{2 - (-1)(1)}{-1} = \frac{3}{-1} = -3 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 4 · Row 3 of $U$ ($k=3$)</h4>
+      $$ u_{33} = -1 - (3)(0) - (4)(-1) = -1 + 4 = 3 $$
+      $$ u_{34} = 2 - (3)(3) - (4)(-5) = 2 - 9 + 20 = 13 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 5 · Column 3 of $L$ ($k=3$)</h4>
+      $$ \ell_{43} = \frac{3 - (-1)(0) - (-3)(-1)}{3} = \frac{3 - 3}{3} = 0 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 6 · Row 4 of $U$ ($k=4$)</h4>
+      $$ u_{44} = -1 - (-1)(3) - (-3)(-5) - (0)(13) = -1 + 3 - 15 = -13 $$
+    </div>
+
+    <div class="example__step example__step--result">
+      <h4>Final factorization</h4>
+      $$
+      L = \begin{bmatrix}
+        1 & 0 & 0 & 0\\
+        2 & 1 & 0 & 0\\
+        3 & 4 & 1 & 0\\
+        -1 & -3 & 0 & 1
+      \end{bmatrix},
+      \quad
+      U = \begin{bmatrix}
+        1 & 1 & 0 & 3\\
+        0 & -1 & -1 & -5\\
+        0 & 0 & 3 & 13\\
+        0 & 0 & 0 & -13
+      \end{bmatrix}
+      $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 7 · Forward substitution</h4>
+      $$ y_1 = 4 $$
+      $$ y_2 = 1 - (2)(4) = -7 $$
+      $$ y_3 = -3 - (3)(4) - (4)(-7) = -3 - 12 + 28 = 13 $$
+      $$ y_4 = 4 - (-1)(4) - (-3)(-7) - (0)(13) = 4 + 4 - 21 = -13 $$
+    </div>
+
+    <div class="example__step">
+      <h4>Step 8 · Backward substitution</h4>
+      $$ x_4 = \frac{-13}{-13} = 1 $$
+      $$ x_3 = \frac{13 - (13)(1)}{3} = \frac{0}{3} = 0 $$
+      $$ x_2 = \frac{-7 - (-1)(0) - (-5)(1)}{-1} = \frac{-7+5}{-1} = 2 $$
+      $$ x_1 = \frac{4 - (1)(2) - (0)(0) - (3)(1)}{1} = -1 $$
+    </div>
+
+    <div class="example__step example__step--result">
+      <h4>Solution</h4>
+      $$ \mathbf{x} = \begin{bmatrix} -1\\ 2\\ 0\\ 1 \end{bmatrix} $$
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     CALCULATOR
+========================================================== -->
+<section id="calculator" class="section section--alt">
+  <div class="section__head">
+    <span class="section__kicker">IV.</span>
+    <h2 class="section__title">Interactive Calculator</h2>
+  </div>
+
+  <p class="calc__intro">
+    Enter the coefficient matrix $A$ and right-hand-side vector $\mathbf{b}$,
+    then press <strong>Solve</strong>. The calculator performs the Doolittle
+    LU decomposition manually and shows every intermediate step.
+  </p>
+
+  <div class="calc">
+    <div class="calc__controls">
+      <label class="field">
+        <span class="field__label">Matrix size</span>
+        <select id="size-select">
+          <option value="2">2 × 2</option>
+          <option value="3" selected>3 × 3</option>
+          <option value="4">4 × 4</option>
+          <option value="5">5 × 5</option>
+          <option value="6">6 × 6</option>
+        </select>
+      </label>
+
+      <label class="field field--toggle">
+        <input type="checkbox" id="pivot-check">
+        <span>Use partial pivoting <em>($PA = LU$)</em></span>
+      </label>
+
+      <div class="calc__btn-row">
+        <button id="example-btn" class="btn btn--ghost" type="button">Load example</button>
+        <button id="clear-btn" class="btn btn--ghost" type="button">Clear</button>
+        <button id="solve-btn" class="btn btn--primary" type="button">Solve →</button>
+      </div>
+    </div>
+
+    <div class="calc__inputs">
+      <div class="calc__field">
+        <label class="field__label">Matrix $A$</label>
+        <div id="matrix-grid" class="matrix-grid"></div>
+      </div>
+      <div class="calc__field calc__field--vector">
+        <label class="field__label">Vector $\mathbf{b}$</label>
+        <div id="vector-grid" class="vector-grid"></div>
+      </div>
+    </div>
+
+    <div id="error-box" class="error-box" hidden></div>
+
+    <div id="results" class="results" hidden>
+      <h3 class="results__title">Result</h3>
+      <div id="result-content"></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     FOOTER
+========================================================== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <p>PIT Finals 2026 · Numerical Methods Online Calculator</p>
+    <p>Topic 08 — LU Decomposition (Doolittle)</p>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
 
